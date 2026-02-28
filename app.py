@@ -5,13 +5,13 @@ from config import setup_environment
 from graph import get_app
 
 st.set_page_config(
-    page_title="Agent Explorer",
-    page_icon="🤖",
+    page_title="CineBot Explorer",
+    page_icon="🍿",
     layout="centered"
 )
 
-st.title("🤖 LangGraph AstraDB AI Agent")
-st.markdown("A modular RAG agent built with **LangGraph**, **AstraDB**, and **Groq**.")
+st.title("🍿 CineBot: Movie RAG Agent")
+st.markdown("A movie-expert RAG agent built with **LangGraph**, **AstraDB**, and **Groq**.")
 
 # Initialize the system parameters once
 @st.cache_resource

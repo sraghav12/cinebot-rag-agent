@@ -1,6 +1,6 @@
-# AstraDB and LangGraph Agent
+# 🍿 CineBot: Movie RAG Agent
 
-This is a complete Python port of the `3_Langraph_With_Astradb.ipynb` notebook into a fully modular project structure. This enables easier source control, reuse, and deployment of your agent application.
+This is a complete Python port of the LangGraph + AstraDB concepts into a fully modular project structure. This agent securely fetches external documents while handling small talk and greeting interactions. It serves as a tailored movie-expert RAG agent pointing to complex movie data records.
 
 ## Prerequisites
 - **Python 3.10+**
@@ -10,7 +10,7 @@ This is a complete Python port of the `3_Langraph_With_Astradb.ipynb` notebook i
 
 1. **Clone or navigate** to the repository:
    ```bash
-   cd langgraph-astra-agent
+   cd cinebot-rag-agent
    ```
 2. **Install dependencies**:
    ```bash
@@ -44,3 +44,7 @@ python main.py "What is an agent in LangChain?"
 ```bash
 python main.py "Who is Shahrukh Khan?"
 ```
+
+## Acknowledgements
+
+It was incredibly fun to work on this project! Building a conversational agent using LangGraph, structured prompt routing, and vector retrieval with AstraDB was a fantastic experience in AI engineering.
