@@ -28,6 +28,13 @@ This is a complete Python port of the `3_Langraph_With_Astradb.ipynb` notebook i
 
 ## Usage
 
+### Using the Interactive UI
+Run the Streamlit application for a visual, conversational chat interface:
+```bash
+streamlit run app.py
+```
+
+### Using the CLI
 You can use the `main.py` entrypoint to talk to your agent. Depending on what you ask, it will route either to a RAG query (on the blog posts) or Wikipedia.
 
 ```bash
