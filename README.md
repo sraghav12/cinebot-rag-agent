@@ -64,6 +64,23 @@ Here is the breakdown of the backend flow:
 5. **Interactive UI (`app.py`)**: 
    - A Streamlit frontend displays the routing process in real-time, pulling the final `generation` state and presenting it interactively to the user.
 
+## Deployment (Streamlit Community Cloud)
+
+You can easily host this interactive UI for free using **Streamlit Community Cloud**:
+1. Go to [share.streamlit.io](https://share.streamlit.io/) and log in with your GitHub account.
+2. Click **New app** and select your `cinebot-rag-agent` repository.
+3. Set the Main file path to `app.py`.
+4. Click on **Advanced Settings** before deploying.
+5. In the **Secrets** text box, paste the contents of your `.env` file just like this:
+   ```toml
+   ASTRA_DB_APPLICATION_TOKEN="your_token_here"
+   ASTRA_DB_ID="your_db_id"
+   GROQ_API_KEY="your_groq_key"
+   ```
+6. Click **Save** and then **Deploy**!
+
+Your movie agent will be live on a public URL to share with others!
+
 ## Acknowledgements
 
 It was incredibly fun to work on this project! Building a conversational agent using LangGraph, structured prompt routing, and vector retrieval with AstraDB was a fantastic experience in AI engineering.
