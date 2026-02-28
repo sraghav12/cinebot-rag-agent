@@ -41,10 +41,11 @@ def init_graph_resources():
     llm = get_llm()
     structured_llm_router = llm.with_structured_output(RouteQuery)
     
-    system = """You are an expert at routing a user question to a vectorstore or wikipedia.
+    system = """You are a routing assistant. Your ONLY job is to route the user's question to either 'vectorstore' or 'wiki_search'.
 The vectorstore contains documents related to agents, prompt engineering, and adversarial attacks.
-Use the vectorstore for questions on these topics. Otherwise, use wiki-search.
-Provide your response strictly as JSON with no conversational text."""
+If the question is about agents, prompt engineering, or adversarial attacks, route to 'vectorstore'.
+Otherwise, route to 'wiki_search'.
+You must ONLY output the tool call JSON. Do NOT answer the user's question. Do NOT provide any conversational text."""
     route_prompt = ChatPromptTemplate.from_messages([
         ("system", system),
         ("human", "{question}"),
@@ -84,6 +85,27 @@ def route_question(state):
         print("---ROUTE QUESTION TO RAG---")
         return "vectorstore"
 
+def generate(state):
+    """Generate answer."""
+    print("---GENERATE---")
+    question = state["question"]
+    documents = state["documents"]
+    
+    if isinstance(documents, list):
+        context = "\n\n".join(getattr(doc, 'page_content', str(doc)) for doc in documents)
+    else:
+        context = getattr(documents, 'page_content', str(documents))
+        
+    prompt = ChatPromptTemplate.from_messages([
+        ("system", "You are a helpful assistant for question-answering tasks. Use the following pieces of retrieved context to answer the question. If you don't know the answer, just say that you don't know. Use three sentences maximum and keep the answer concise.\n\nContext: {context}"),
+        ("human", "{question}")
+    ])
+    
+    rag_chain = prompt | llm
+    response = rag_chain.invoke({"context": context, "question": question})
+    
+    return {"generation": response.content}
+
 def get_app():
     """Builds and compiles the LangGraph StateGraph."""
     init_graph_resources()
@@ -93,6 +115,7 @@ def get_app():
     # Define nodes
     workflow.add_node("wiki_search", wiki_search)
     workflow.add_node("retrieve", retrieve)
+    workflow.add_node("generate", generate)
     
     # Define edges
     workflow.add_conditional_edges(
@@ -103,7 +126,8 @@ def get_app():
             "vectorstore": "retrieve",
         },
     )
-    workflow.add_edge("retrieve", END)
-    workflow.add_edge("wiki_search", END)
+    workflow.add_edge("retrieve", "generate")
+    workflow.add_edge("wiki_search", "generate")
+    workflow.add_edge("generate", END)
     
     return workflow.compile()

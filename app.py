@@ -60,14 +60,17 @@ if prompt := st.chat_input("Ask about agents, adversarial attacks, or anything e
                         final_results = value
                 
                 # Parse final answer
-                docs = final_results.get('documents', [])
-                if isinstance(docs, list) and len(docs) > 0:
-                    answer = docs[0].metadata.get('description', docs[0].page_content)
-                elif hasattr(docs, 'page_content'):
-                    # Useful for Wikipedia results which might be a single Document object
-                    answer = docs.page_content
+                if final_results and 'generation' in final_results:
+                    answer = final_results['generation']
                 else:
-                    answer = str(docs)
+                    docs = final_results.get('documents', [])
+                    if isinstance(docs, list) and len(docs) > 0:
+                        answer = docs[0].metadata.get('description', getattr(docs[0], 'page_content', str(docs[0])))
+                    elif hasattr(docs, 'page_content'):
+                        # Useful for Wikipedia results which might be a single Document object
+                        answer = docs.page_content
+                    else:
+                        answer = str(docs)
 
                 status.update(label="Response generated!", state="complete", expanded=False)
                 

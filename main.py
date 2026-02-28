@@ -10,11 +10,16 @@ def print_stream(app, inputs):
         pprint("\n---\n")
     
     # Process final generation based on the output keys
-    docs = value.get('documents', [])
-    if isinstance(docs, list) and len(docs) > 0:
-        pprint(docs[0].metadata.get('description', docs[0].page_content))
+    if value and 'generation' in value:
+        pprint(value['generation'])
     else:
-        pprint(docs)
+        docs = value.get('documents', [])
+        if isinstance(docs, list) and len(docs) > 0:
+            pprint(docs[0].metadata.get('description', getattr(docs[0], 'page_content', str(docs[0]))))
+        elif hasattr(docs, 'page_content'):
+            pprint(docs.page_content)
+        else:
+            pprint(docs)
 
 def main():
     parser = argparse.ArgumentParser(description="LangGraph AstraDB Agent")
