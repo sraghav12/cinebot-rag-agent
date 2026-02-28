@@ -45,6 +45,25 @@ python main.py "What is an agent in LangChain?"
 python main.py "Who is Shahrukh Khan?"
 ```
 
+## How It Works (Technical Architecture)
+
+This project leverages **LangGraph** to create a deterministic, state-driven workflow for Retrieval-Augmented Generation (RAG). Instead of a standard linear chain, the agent uses a **Directed Acyclic Graph (DAG)** to route questions dynamically.
+
+Here is the breakdown of the backend flow:
+1. **State Management (`graph.py`)**: The agent's memory and current process are managed via a `TypedDict` state, containing the `question`, retrieved `documents`, and final LLM `generation`.
+2. **Intelligent Routing**: 
+   - A `ChatGroq` LLM (using the robust **Llama-3.3-70b-versatile** model) acts as the decision engine.
+   - It analyzes the user's prompt and strictly outputs a JSON decision to route the query to one of three nodes:
+     - `vectorstore`: For domain-specific questions mapped to the database.
+     - `wiki_search`: For general knowledge questions (using `WikipediaAPIWrapper`).
+     - `direct_answer`: For greetings and conversational small talk.
+3. **Retrieval (`rag.py` & `tools.py`)**: 
+   - When routed to the vector store, the agent queries **DataStax AstraDB** (Cassandra), populated with chunks of text vectorized using HuggingFace's `all-MiniLM-L6-v2` embeddings.
+4. **Generation Node**: 
+   - Regardless of the retrieval source (Wiki or AstraDB), the gathered documents are passed to the `generate` node. The LLM synthesizes this raw context into a natural, conversational response using prompt engineering.
+5. **Interactive UI (`app.py`)**: 
+   - A Streamlit frontend displays the routing process in real-time, pulling the final `generation` state and presenting it interactively to the user.
+
 ## Acknowledgements
 
 It was incredibly fun to work on this project! Building a conversational agent using LangGraph, structured prompt routing, and vector retrieval with AstraDB was a fantastic experience in AI engineering.
