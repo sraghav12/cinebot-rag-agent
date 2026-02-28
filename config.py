@@ -27,4 +27,4 @@ def setup_environment():
 def get_llm():
     from langchain_groq import ChatGroq
     groq_api_key = os.getenv("GROQ_API_KEY")
-    return ChatGroq(groq_api_key=groq_api_key, model_name="Gemma2-9b-It")
+    return ChatGroq(groq_api_key=groq_api_key, model_name="llama-3.1-8b-instant")
