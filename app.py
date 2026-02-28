@@ -63,6 +63,9 @@ if prompt := st.chat_input("Ask about agents, adversarial attacks, or anything e
                 docs = final_results.get('documents', [])
                 if isinstance(docs, list) and len(docs) > 0:
                     answer = docs[0].metadata.get('description', docs[0].page_content)
+                elif hasattr(docs, 'page_content'):
+                    # Useful for Wikipedia results which might be a single Document object
+                    answer = docs.page_content
                 else:
                     answer = str(docs)
 
