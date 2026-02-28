@@ -13,3 +13,4 @@ python-dotenv==1.2.1
 arxiv
 wikipedia
 streamlit==1.38.0
+sentence-transformers==3.4.1
