@@ -51,9 +51,7 @@ You must ONLY output the tool call JSON. Do NOT answer the user's question. Do N
         ("system", system),
         ("human", "{question}"),
     ])
-    
     question_router = route_prompt | structured_llm_router
-    retriever = get_retriever()
     
     tools = get_tools()
     wiki = tools['wiki']
@@ -62,7 +60,12 @@ def retrieve(state):
     """Retrieve documents"""
     print("---RETRIEVE---")
     question = state["question"]
-    documents = retriever.invoke(question)
+    
+    # Lazy load retriever so we don't boot heavy HuggingFace models on every app launch
+    if 'retriever' not in globals() or globals()['retriever'] is None:
+        globals()['retriever'] = get_retriever()
+        
+    documents = globals()['retriever'].invoke(question)
     return {"documents": documents, "question": question}
 
 def wiki_search(state):
