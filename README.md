@@ -1,5 +1,7 @@
 # 🍿 CineBot: Movie RAG Agent
 
+**Live Demo:** [https://cinebot-rag-agent-mnamyragmr8qch7sfuu8tl.streamlit.app/](https://cinebot-rag-agent-mnamyragmr8qch7sfuu8tl.streamlit.app/)
+
 This is a complete Python port of the LangGraph + AstraDB concepts into a fully modular project structure. This agent securely fetches external documents while handling small talk and greeting interactions. It serves as a tailored movie-expert RAG agent pointing to complex movie data records.
 
 ## Prerequisites
