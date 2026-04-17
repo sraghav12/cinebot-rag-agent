@@ -38,4 +38,4 @@ def get_llm():
     from langchain_groq import ChatGroq
     groq_api_key = _get_secret("GROQ_API_KEY") or os.getenv("GROQ_API_KEY")
     # Using 8b model for ultra-fast low-latency responses
-    return ChatGroq(groq_api_key=groq_api_key, model_name="llama3-8b-8192")
+    return ChatGroq(groq_api_key=groq_api_key, model_name="llama-3.1-8b-instant")
