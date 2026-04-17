@@ -5,6 +5,7 @@ __pycache__/
 
 # Environments
 .env
+.streamlit/secrets.toml
 
 # Jupyter notebooks
 .ipynb_checkpoints
