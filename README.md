@@ -1,88 +1,160 @@
-# 🍿 CineBot: Movie RAG Agent
+# CineBot: Movie RAG Agent
 
-**Live Demo:** [https://cinebot-rag-agent-mnamyragmr8qch7sfuu8tl.streamlit.app/](https://cinebot-rag-agent-mnamyragmr8qch7sfuu8tl.streamlit.app/)
+**Live Demo:** [cinebot-rag-agent.streamlit.app](https://cinebot-rag-agent-mnamyragmr8qch7sfuu8tl.streamlit.app/)
 
-This is a complete Python port of the LangGraph + AstraDB concepts into a fully modular project structure. This agent securely fetches external documents while handling small talk and greeting interactions. It serves as a tailored movie-expert RAG agent pointing to complex movie data records.
+A conversational AI agent that answers questions by dynamically routing them to the right knowledge source — a vector database, Wikipedia, or its own LLM reasoning — using LangGraph, AstraDB, and Groq.
 
-## Prerequisites
-- **Python 3.10+**
-- (Optional but recommended) Conda or `venv` virtual environment
+---
 
-## Setup
+## The Problem
 
-1. **Clone or navigate** to the repository:
-   ```bash
-   cd cinebot-rag-agent
-   ```
-2. **Install dependencies**:
-   ```bash
-   pip install -r requirements.txt
-   ```
-3. **Set up Environment Variables**:
-   Copy the example environment file and fill in your keys.
-   ```bash
-   cp .env.example .env
-   ```
-   Add your `ASTRA_DB_APPLICATION_TOKEN`, `ASTRA_DB_ID`, and `GROQ_API_KEY`.
+Standard LLM chatbots have two failure modes:
 
-4. **Initialize Vectorstore (Optional depending on how you split data)**
-   In this codebase, documents are indexed dynamically in `rag.py` upon initial load.
+1. **They hallucinate** when asked about specific, grounded knowledge they weren't trained on.
+2. **They over-retrieve** — hitting a vector database for every question, even simple greetings or general knowledge that doesn't need it.
 
-## Usage
+CineBot solves both by adding an intelligent routing layer before any retrieval happens.
 
-### Using the Interactive UI
-Run the Streamlit application for a visual, conversational chat interface:
+---
+
+## How It Works
+
+Every user message goes through a three-stage pipeline:
+
+```
+User Question
+      │
+      ▼
+┌─────────────┐
+│   Router    │  ← LLM classifies the question type
+└──────┬──────┘
+       │
+  ┌────┴────────────────┐
+  │                     │                     │
+  ▼                     ▼                     ▼
+vectorstore          wiki_search         direct_answer
+(AstraDB)           (Wikipedia)          (LLM only)
+  │                     │
+  └──────────┬──────────┘
+             ▼
+        ┌─────────┐
+        │Generate │  ← LLM synthesizes context into a response
+        └─────────┘
+```
+
+### Stage 1: Routing
+
+A Groq LLM (`llama-3.1-8b-instant`) reads the question and outputs a structured JSON decision:
+
+- `vectorstore` — domain-specific questions about the indexed content
+- `wiki_search` — general knowledge questions (people, events, facts)
+- `direct_answer` — greetings, small talk, meta questions
+
+The router is constrained via `with_structured_output` so it **only** emits the routing decision — it never answers the question itself.
+
+### Stage 2: Retrieval
+
+**Vector Store path:** Queries DataStax AstraDB using semantic search. Documents are chunked and embedded with HuggingFace's `all-MiniLM-L6-v2` model, stored as dense vectors. The retriever finds the most semantically similar chunks to the question.
+
+**Wikipedia path:** Calls the Wikipedia API directly for open-world factual queries.
+
+**Direct answer path:** Skips retrieval entirely — the LLM answers from its own knowledge.
+
+### Stage 3: Generation
+
+Retrieved context (from either source) is injected into a prompt and passed to the LLM, which synthesizes a concise, grounded response. This keeps answers factual and traceable to source documents.
+
+---
+
+## Architecture
+
+```
+cinebot-rag-agent/
+├── app.py          # Streamlit UI — streams LangGraph node execution live
+├── graph.py        # LangGraph StateGraph — defines nodes, edges, routing logic
+├── config.py       # Environment setup — reads from .env or Streamlit secrets
+├── rag.py          # AstraDB vector store — embeddings + retriever
+└── tools.py        # Wikipedia + Arxiv API wrappers
+```
+
+**State schema** (flows through every node):
+```python
+{
+  "question":   str,   # original user input
+  "documents":  list,  # retrieved chunks or wiki results
+  "generation": str    # final LLM response
+}
+```
+
+**Tech stack:**
+| Layer | Tool |
+|---|---|
+| Agent orchestration | LangGraph |
+| LLM + routing | Groq (`llama-3.1-8b-instant`) |
+| Vector database | DataStax AstraDB (Data API) |
+| Embeddings | HuggingFace `all-MiniLM-L6-v2` |
+| Web search | Wikipedia API |
+| UI | Streamlit |
+
+---
+
+## Local Setup
+
+**Prerequisites:** Python 3.10+
+
+```bash
+git clone https://github.com/your-username/cinebot-rag-agent
+cd cinebot-rag-agent
+pip install -r requirements.txt
+cp .env.example .env
+```
+
+Fill in `.env`:
+```
+ASTRA_DB_APPLICATION_TOKEN="AstraCS:..."
+ASTRA_DB_ID="your-database-uuid"
+ASTRA_DB_API_ENDPOINT="https://<db-id>-<region>.apps.astra.datastax.com"
+GROQ_API_KEY="your-groq-key"
+```
+
+Run the UI:
 ```bash
 streamlit run app.py
 ```
 
-### Using the CLI
-You can use the `main.py` entrypoint to talk to your agent. Depending on what you ask, it will route either to a RAG query (on the blog posts) or Wikipedia.
-
+Or via CLI:
 ```bash
-python main.py "What is an agent in LangChain?"
+python main.py "What is prompt engineering?"
+python main.py "Who directed Inception?"
+python main.py "hi"
 ```
 
-```bash
-python main.py "Who is Shahrukh Khan?"
+---
+
+## Deploying to Streamlit Cloud
+
+1. Push the repo to GitHub
+2. Go to [share.streamlit.io](https://share.streamlit.io) → **New app** → select repo, set `app.py` as entrypoint
+3. Under **Advanced Settings → Secrets**, add:
+
+```toml
+ASTRA_DB_APPLICATION_TOKEN = "AstraCS:..."
+ASTRA_DB_ID = "your-database-uuid"
+ASTRA_DB_API_ENDPOINT = "https://<db-id>-<region>.apps.astra.datastax.com"
+GROQ_API_KEY = "your-groq-key"
 ```
 
-## How It Works (Technical Architecture)
+4. Deploy. The app reads secrets from `st.secrets` on Streamlit Cloud and from `.env` locally — no code changes needed between environments.
 
-This project leverages **LangGraph** to create a deterministic, state-driven workflow for Retrieval-Augmented Generation (RAG). Instead of a standard linear chain, the agent uses a **Directed Acyclic Graph (DAG)** to route questions dynamically.
+---
 
-Here is the breakdown of the backend flow:
-1. **State Management (`graph.py`)**: The agent's memory and current process are managed via a `TypedDict` state, containing the `question`, retrieved `documents`, and final LLM `generation`.
-2. **Intelligent Routing**: 
-   - A `ChatGroq` LLM (using the robust **Llama-3.3-70b-versatile** model) acts as the decision engine.
-   - It analyzes the user's prompt and strictly outputs a JSON decision to route the query to one of three nodes:
-     - `vectorstore`: For domain-specific questions mapped to the database.
-     - `wiki_search`: For general knowledge questions (using `WikipediaAPIWrapper`).
-     - `direct_answer`: For greetings and conversational small talk.
-3. **Retrieval (`rag.py` & `tools.py`)**: 
-   - When routed to the vector store, the agent queries **DataStax AstraDB** (Cassandra), populated with chunks of text vectorized using HuggingFace's `all-MiniLM-L6-v2` embeddings.
-4. **Generation Node**: 
-   - Regardless of the retrieval source (Wiki or AstraDB), the gathered documents are passed to the `generate` node. The LLM synthesizes this raw context into a natural, conversational response using prompt engineering.
-5. **Interactive UI (`app.py`)**: 
-   - A Streamlit frontend displays the routing process in real-time, pulling the final `generation` state and presenting it interactively to the user.
+## Why LangGraph Over a Simple Chain?
 
-## Deployment (Streamlit Community Cloud)
+A standard LangChain chain executes steps linearly — every question hits every step. LangGraph models the workflow as a **directed graph**, which means:
 
-You can easily host this interactive UI for free using **Streamlit Community Cloud**:
-1. Go to [share.streamlit.io](https://share.streamlit.io/) and log in with your GitHub account.
-2. Click **New app** and select your `cinebot-rag-agent` repository.
-3. Set the Main file path to `app.py`.
-4. Click on **Advanced Settings** before deploying.
-5. In the **Secrets** text box, paste the contents of your `.env` file just like this:
-   ```toml
-   ASTRA_DB_APPLICATION_TOKEN="your_token_here"
-   ASTRA_DB_ID="your_db_id"
-   GROQ_API_KEY="your_groq_key"
-   ```
-6. Click **Save** and then **Deploy**!
+- Routing is a first-class decision, not an afterthought
+- Each node is isolated and testable independently
+- New retrieval sources (Arxiv, a SQL database, an API) can be added as nodes without touching existing logic
+- The graph state is explicit and inspectable at every step
 
-Your movie agent will be live on a public URL to share with others!
-
-## Acknowledgements
-
-It was incredibly fun to work on this project! Building a conversational agent using LangGraph, structured prompt routing, and vector retrieval with AstraDB was a fantastic experience in AI engineering.
+The Streamlit UI surfaces this — you can watch which node each question flows through in real time.
